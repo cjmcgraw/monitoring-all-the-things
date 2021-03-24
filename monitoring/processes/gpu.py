@@ -93,17 +93,17 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
 
 
 def parse_memory(m):
-    value, unit = m.split()
+    value, unit = m.strip().split()
     return float(m)
 
 
 def parse_percentage(m):
-    value, _ = m.split()
+    value, _ = m.strip().split()
     return float(m)
 
 
 def parse_frequency(m):
-    value, unit = m.split()
+    value, unit = m.strip().split()
     return float(m)
 
 
@@ -148,8 +148,9 @@ class NvidiaSmi(SimpleMonitoringProcess):
             records = row.split(',')
             try:
                 return {
-                    k: f(x) for
-                    (k, f), x in zip(smi_query_columns_with_transformations, records)
+                    k: f(x)
+                    for record in records
+                    for (k, f), x in zip(smi_query_columns_with_transformations, record)
                 }
             except:
                 return None
