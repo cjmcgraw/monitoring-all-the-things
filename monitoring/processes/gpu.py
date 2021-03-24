@@ -40,15 +40,12 @@ class NvidiaSmiDmon(SimpleMonitoringProcess):
         next(stdout)
 
         def process_row(row):
-            try:
-                date, time, *cols = row.split()
-                record = [f"{date} {time}"] + cols
-                return {
-                    k: f(x) for (k, f), x
-                    in zip(record, dmon_columns_with_transformations)
-                }
-            except:
-                return None
+            date, time, *cols = row.split()
+            record = [f"{date} {time}"] + cols
+            return {
+                k: f(x) for (k, f), x
+                in zip(dmon_columns_with_transformations, record)
+            }
 
         data = filter(None, map(process_row, stdout))
         return pd.DataFrame(data).set_index('datetime')
@@ -130,16 +127,12 @@ class NvidiaSmi(SimpleMonitoringProcess):
         stdout = iter(self)
 
         def process_row(row):
-            records = row.split(',')
-            try:
-                return {
-                    k: f(x)
-                    for record in records
-                    for (k, f), x in zip(smi_query_columns_with_transformations, record)
-                }
-            except:
-                return None
+            record = row.split(',')
+            return {
+                k: f(x)
+                for (k, f), x in zip(smi_query_columns_with_transformations, record)
+            }
 
         data = filter(None, map(process_row, stdout))
-        return pd.DataFrame(data).set_index('datetime')
+        df = pd.DataFrame(data).set_index('datetime')
 
