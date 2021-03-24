@@ -37,7 +37,7 @@ class NvidiaSmiDmon(SimpleMonitoringProcess):
         )
 
     def load_dataframe(self) -> pd.DataFrame:
-        *stdout = list(iter(self))
+        stdout = list(iter(self))
 
         def process_stdout():
             for line_number, row in enumerate(stdout):
