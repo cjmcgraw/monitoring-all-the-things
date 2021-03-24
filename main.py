@@ -9,7 +9,7 @@ from monitoring import *
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument("--output-dir", default=f"./{dt.datetime.utcnow().isoformat()}-monitoring-session")
+    p.add_argument("--output-dir", default=f"./{dt.datetime.now().isoformat()}-monitoring-session")
     p.add_argument("--include-network", action="store_true")
     p.add_argument("--pid", type=int)
     p.add_argument("--nvidia-gpu", action="store_true")
