@@ -64,6 +64,7 @@ pmon_columns_with_transformations = [
     ('command', str)
 ]
 
+
 class NvidiaSmiPmon(SimpleMonitoringProcess):
 
     def __init__(self):
@@ -78,15 +79,14 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
         next(stdout)
 
         def process_row(row):
-            try:
-                date, time, *cols = row.split()
-                record = [f"{date} {time}"] + cols
-                return {
-                    k: f(x) for (k, f), x
-                    in zip(pmon_columns_with_transformations, record)
-                }
-            except:
-                return None
+            date, time, *cols = row.split()
+            record = [f"{date} {time}"] + cols
+            return {
+                k: f(x) for (k, f), x
+                in zip(pmon_columns_with_transformations, record)
+            }
+        data = filter(None, map(process_row, stdout))
+        return pd.DataFrame(data).set_index('datetime')
 
 
 smi_query_columns_with_transformations = [
