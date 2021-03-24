@@ -134,5 +134,4 @@ class NvidiaSmi(SimpleMonitoringProcess):
             }
 
         data = filter(None, map(process_row, stdout))
-        df = pd.DataFrame(data).set_index('datetime')
-
+        return pd.DataFrame(data).set_index('datetime')
