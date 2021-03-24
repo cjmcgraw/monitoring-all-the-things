@@ -60,22 +60,33 @@ class NetHogs(MonitoringProcess):
     def load_dataframe(self) -> pd.DataFrame:
         stdout = iter(self)
 
+        lines_skipped = 0
         has_hit_refreshing = False
         while not has_hit_refreshing:
             # need to advance the stdout until we see what we care about
             has_hit_refreshing = 'Refreshing:' in next(stdout)
+            lines_skipped += 1
 
+        lines = list(stdout)
         parsed_records = []
-        for line in stdout:
+        for i, line in enumerate(lines, start=lines_skipped):
             unparsed_record = line.split()
             if len(unparsed_record) >= 4:
-                timestamp, *process, sent, recv = unparsed_record
-                parsed_records.append({
-                    "datetime": pd.to_datetime(timestamp),
-                    "process_hash": md5(' '.join(process).encode()).hexdigest(),
-                    "process": ' '.join(process),
-                    'net_kb_sent': round(float(sent), 5),
-                    'net_kb_recieved': round(float(recv), 5)
-                })
+                try:
+                    timestamp, *process, sent, recv = unparsed_record
+                    parsed_records.append({
+                        "datetime": pd.to_datetime(timestamp),
+                        "process_hash": md5(' '.join(process).encode()).hexdigest(),
+                        "process": ' '.join(process),
+                        'net_kb_sent': round(float(sent), 5),
+                        'net_kb_recieved': round(float(recv), 5)
+                    })
+                except Exception as err:
+                    log.error(f"{self.name}: failed to process line #{i}")
+                    log.error(f"{self.name}: line = {line}")
+                    log.exception(err)
 
-        return pd.DataFrame(parsed_records).set_index('datetime')
+        return (
+            pd.DataFrame(parsed_records)
+            .set_index('datetime')
+        )

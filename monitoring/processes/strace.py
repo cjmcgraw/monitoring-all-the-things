@@ -1,6 +1,7 @@
 import uuid
 import pandas as pd
 import datetime as dt
+import logging as log
 
 from . import MonitoringProcess, _SubMonitoringProcess
 
@@ -39,32 +40,36 @@ class Strace(MonitoringProcess):
             fh.close()
 
     def load_dataframe(self) -> pd.DataFrame:
-        def process_row(row):
-            try:
-                timestamp, *middle, timing = row.split()
+        stdout = list(iter(self))
+        def process_stdout():
+            for i, line in enumerate(stdout, start=1):
+                try:
+                    timestamp, *middle, timing = row.split()
 
-                *syscall, return_code_with_error_msg_maybe = ' '.join(middle).split('=')
+                    *syscall, return_code_with_error_msg_maybe = ' '.join(middle).split('=')
 
-                return_code, *error_msg = return_code_with_error_msg_maybe.split()
-                error_msg = ' '.join(error_msg)
+                    return_code, *error_msg = return_code_with_error_msg_maybe.split()
+                    error_msg = ' '.join(error_msg)
 
-                fn, *args = '='.join(syscall).split('(')
-                args = '('.join(args)
+                    fn, *args = '='.join(syscall).split('(')
+                    args = '('.join(args)
 
-                return {
-                    "datetime": dt.datetime.fromtimestamp(float(timestamp)),
-                    "timing": float(timing.strip("<").strip(">")),
-                    "fn": fn,
-                    "args": args,
-                    "return_code": int(return_code),
-                    "error_msg": error_msg,
-                }
-            except Exception as err:
-                return None
+                    yield {
+                        "datetime": dt.datetime.fromtimestamp(float(timestamp)),
+                        "timing": float(timing.strip("<").strip(">")),
+                        "fn": fn,
+                        "args": args,
+                        "return_code": int(return_code),
+                        "error_msg": error_msg,
+                    }
+                except Exception as err:
+                    log.error(f"{self.name}: failed to process line #{i}")
+                    log.error(f"{self.name}: line = {line}")
+                    log.exception(err)
 
-        stdout = iter(self)
-        return pd.DataFrame(
-            data=filter(lambda x: x is not None, map(process_row, stdout))
+        return (
+            pd.DataFrame(process_stdout())
+            .set_index('datetime')
         )
 
 

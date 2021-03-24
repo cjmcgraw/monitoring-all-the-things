@@ -18,7 +18,6 @@ class IoStat(SimpleMonitoringProcess):
             data = json.load(f)
 
         records = []
-
         for record in data['sysstat']['hosts'][0]['statistics']:
             datetime = pd.to_datetime(record['timestamp'])
             for value in record['disk']:
