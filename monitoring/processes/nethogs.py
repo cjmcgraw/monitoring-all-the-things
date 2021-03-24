@@ -6,7 +6,7 @@ import uuid
 import pandas as pd
 from hashlib import md5
 
-from . import MonitoringProcess, _SubMonitoringProcess
+from . import MonitoringProcess, _SubMonitoringProcess, get_message_error_reading_line
 
 columns_with_transforms = [
     ('datetime', pd.to_datetime),
@@ -69,7 +69,7 @@ class NetHogs(MonitoringProcess):
 
         lines = list(stdout)
         parsed_records = []
-        for i, line in enumerate(lines, start=lines_skipped):
+        for line_number, line in enumerate(lines):
             unparsed_record = line.split()
             if len(unparsed_record) >= 4:
                 try:
@@ -82,11 +82,13 @@ class NetHogs(MonitoringProcess):
                         'net_kb_recieved': round(float(recv), 5)
                     })
                 except Exception as err:
-                    log.error(f"{self.name}: failed to process line #{i}")
-                    log.error(f"{self.name}: line = {line}")
+                    log.error(get_message_error_reading_line(
+                        self.name,
+                        self._timestamp_process.stdout_file,
+                        stdout,
+                        line_number,
+                        header_lines_consumed=lines_skipped
+                    ))
                     log.exception(err)
 
-        return (
-            pd.DataFrame(parsed_records)
-            .set_index('datetime')
-        )
+        return pd.DataFrame(parsed_records)

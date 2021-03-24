@@ -23,4 +23,4 @@ class IoStat(SimpleMonitoringProcess):
             for value in record['disk']:
                 records.append(dict(**value, datetime=datetime))
 
-        return pd.DataFrame(data=records).set_index(['datetime', 'disk_device'])
+        return pd.DataFrame(records)

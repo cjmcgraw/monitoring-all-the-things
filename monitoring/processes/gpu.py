@@ -1,7 +1,8 @@
 import pandas as pd
 import logging as log
+from textwrap import dedent
 
-from . import SimpleMonitoringProcess, MonitoringProcess
+from . import SimpleMonitoringProcess, MonitoringProcess, get_message_error_reading_line
 
 dmon_columns_with_transformations = [
     ('datetime', pd.to_datetime),
@@ -39,7 +40,7 @@ class NvidiaSmiDmon(SimpleMonitoringProcess):
         _, _, *stdout = list(iter(self))
 
         def process_stdout():
-            for i, row in enumerate(stdout, start=2):
+            for line_number, row in enumerate(stdout):
                 try:
                     date, time, *cols = row.split()
                     record = [f"{date} {time}"] + cols
@@ -48,14 +49,16 @@ class NvidiaSmiDmon(SimpleMonitoringProcess):
                         in zip(dmon_columns_with_transformations, record)
                     }
                 except Exception as err:
-                    log.error(f"{self.name}: failed to process row #{i}")
-                    log.error(f"{self.name}: line = {row}")
+                    log.error(get_message_error_reading_line(
+                        self.name,
+                        self.stdout_file,
+                        stdout,
+                        line_number,
+                        header_lines_consumed=2
+                    ))
                     log.exception(err)
 
-        return (
-            pd.DataFrame(process_stdout())
-            .set_index('datetime')
-        )
+        return pd.DataFrame(process_stdout())
 
 
 def process_int_or_empty(i):
@@ -98,7 +101,7 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
         _, _, *stdout = list(iter(self))
 
         def process_stdout():
-            for i, row in enumerate(stdout, start=2):
+            for line_number, row in enumerate(stdout):
                 try:
                     date, time, *cols = row.split()
                     record = [f"{date} {time}"] + cols
@@ -107,14 +110,16 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
                         in zip(pmon_columns_with_transformations, record)
                     }
                 except Exception as err:
-                    log.error(f"{self.name}: failed to process record #{i}")
-                    log.error(f"{self.name}: line = {row}")
+                    log.error(get_message_error_reading_line(
+                        self.name,
+                        self.stdout_file,
+                        stdout,
+                        line_number,
+                        header_lines_consumed=2
+                    ))
                     log.exception(err)
 
-        return (
-            pd.DataFrame(process_stdout())
-            .set_index('datetime')
-        )
+        return pd.DataFrame(process_stdout())
 
 
 smi_query_columns_with_transformations = [
@@ -155,7 +160,7 @@ class NvidiaSmi(SimpleMonitoringProcess):
         stdout = list(iter(self))
 
         def process_stdout():
-            for i, row in enumerate(stdout, start=1):
+            for line_number, row in enumerate(stdout):
                 try:
                     record = row.split(',')
                     return {
@@ -163,11 +168,13 @@ class NvidiaSmi(SimpleMonitoringProcess):
                         for (k, f), x in zip(smi_query_columns_with_transformations, record)
                     }
                 except Exception as err:
+                    log.error(get_message_error_reading_line(
+                        self.name,
+                        self.stdout_file,
+                        stdout,
+                        line_number,
+                        header_lines_consumed=0
+                    ))
                     log.exception(err)
-                    log.error(f"{self.name}: failed to process row #{i}")
-                    log.error(f"{self.name}: line = {row}")
 
-        return (
-            pd.DataFrame(process_stdout())
-            .set_index('datetime')
-        )
+        return pd.DataFrame(process_stdout())

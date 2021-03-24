@@ -31,4 +31,4 @@ class MpStat(SimpleMonitoringProcess):
                     **record
                 })
 
-        return pd.DataFrame(rows).set_index('datetime')
+        return pd.DataFrame(rows)

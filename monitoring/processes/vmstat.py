@@ -1,5 +1,6 @@
-from . import SimpleMonitoringProcess
+from . import SimpleMonitoringProcess, get_message_error_reading_line
 import pandas as pd
+import logging as log
 
 
 def to_mb(b):
@@ -41,28 +42,26 @@ class VmStat(SimpleMonitoringProcess):
         )
 
     def load_dataframe(self) -> pd.DataFrame:
-        def process_row(row):
-            *line, date, time = row.split()
-            record = line + ["T".join([date, time])]
-            return [
-                f(x) for (_, f), x
-                in zip(columns_with_transforms, record)
-            ]
+        _, _, *stdout = list(iter(self))
 
-        stdout = iter(self)
+        def process_stdout():
+            for line_number, line in enumerate(stdout):
+                try:
+                    *cols, date, time = line.split()
+                    record = cols + ["T".join([date, time])]
+                    yield {
+                        k: f(x) for (k, f), x
+                        in zip(columns_with_transforms, record)
+                    }
+                except Exception as err:
+                    log.error(get_message_error_reading_line(
+                        self.name,
+                        self.stdout_file,
+                        stdout,
+                        line_number,
+                        header_lines_consumed=2
+                    ))
+                    log.exception(err)
 
-        # ignore first two lines of vmstat
-        next(stdout)
-        next(stdout)
-
-        df = (
-            pd.DataFrame(
-                data=map(process_row, stdout),
-                columns=[e[0] for e in columns_with_transforms], )
-            .set_index('datetime')
-            .groupby(pd.Grouper(freq='S'))
-            .mean()
-        )
-
-        return df
+        return pd.DataFrame(process_stdout())
 

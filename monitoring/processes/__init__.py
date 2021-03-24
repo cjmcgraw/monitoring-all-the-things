@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 import datetime as dt
-from typing import IO, List
+from typing import IO, List, Dict, Iterable, Callable, Generator
 import logging as log
 import pandas as pd
 import subprocess
+from textwrap import dedent
+import os
+
 
 
 class MonitoringProcess(ABC):
@@ -94,3 +97,33 @@ class SimpleMonitoringProcess(MonitoringProcess):
 class _SubMonitoringProcess(SimpleMonitoringProcess):
     def load_dataframe(self) -> pd.DataFrame:
         raise NotImplementedError("Must implement from abstract base class!!")
+
+
+def get_message_error_reading_line(process_name, filepath, lines, line_number, header_lines_consumed=0):
+    actual_line_number = line_number + header_lines_consumed + 1
+    i = line_number
+    msg = dedent(f"""
+    {process_name}: Error reading line from stdout
+    
+    process: {process_name}
+    file: {filepath}
+    line number: {line_number + 1}
+    lines:
+    
+    """)
+    first_section = lines[max(0, i - 5): i - 1]
+    if first_section:
+        for ln, section in enumerate(first_section, start=actual_line_number - len(first_section)):
+            msg += f"   {ln} | {section} \n"
+
+    msg += f">  {actual_line_number} | {lines[i]}\n"
+
+    last_section = lines[i: i + 5]
+    if last_section:
+        for ln, section in enumerate(last_section, start=actual_line_number + 1):
+            msg += f"   {ln} | {section} \n"
+
+    return msg
+
+
+

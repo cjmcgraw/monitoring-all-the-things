@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 import logging as log
 
-from . import MonitoringProcess, _SubMonitoringProcess
+from . import MonitoringProcess, _SubMonitoringProcess, get_message_error_reading_line
 
 
 class Strace(MonitoringProcess):
@@ -14,7 +14,7 @@ class Strace(MonitoringProcess):
         self._strace_output_file = None
         self._sub_process = _SubMonitoringProcess(
             f"pid-{pid}-strace-stdout",
-            ["strace", "-tttTvxC", "-p", f"{pid}"],
+            ["strace", "-tttTvx", "-p", f"{pid}"],
         )
 
     @property
@@ -41,35 +41,46 @@ class Strace(MonitoringProcess):
 
     def load_dataframe(self) -> pd.DataFrame:
         stdout = list(iter(self))
+
+        blacklist = [
+            'exited'
+        ]
+
         def process_stdout():
-            for i, line in enumerate(stdout, start=1):
-                try:
-                    timestamp, *middle, timing = row.split()
+            for line_number, line in enumerate(stdout):
+                if all(x not in line for x in blacklist):
+                    try:
+                        timestamp, *middle, timing = line.split()
 
-                    *syscall, return_code_with_error_msg_maybe = ' '.join(middle).split('=')
+                        *syscall, return_code_with_error_msg_maybe = ' '.join(middle).split('=')
+                        return_code, *error_msg = return_code_with_error_msg_maybe.split()
+                        error_msg = ' '.join(error_msg)
+                        fn, *args = '='.join(syscall).split('(')
+                        args = '('.join(args)
 
-                    return_code, *error_msg = return_code_with_error_msg_maybe.split()
-                    error_msg = ' '.join(error_msg)
+                        if '<detached ...>' in line:
+                            timing = None
+                            return_code = None
+                            error_msg = None
 
-                    fn, *args = '='.join(syscall).split('(')
-                    args = '('.join(args)
+                        yield {
+                            "datetime": dt.datetime.fromtimestamp(float(timestamp)),
+                            "timing": float(timing.strip("<").strip(">")) if timing else None,
+                            "fn": fn,
+                            "args": args,
+                            "return_code": int(return_code) if return_code else None,
+                            "error_msg": error_msg,
+                        }
+                    except Exception as err:
+                        log.error(get_message_error_reading_line(
+                            self.name,
+                            self._strace_output_file,
+                            stdout,
+                            line_number,
+                            header_lines_consumed=0
+                        ))
+                        log.exception(err)
 
-                    yield {
-                        "datetime": dt.datetime.fromtimestamp(float(timestamp)),
-                        "timing": float(timing.strip("<").strip(">")),
-                        "fn": fn,
-                        "args": args,
-                        "return_code": int(return_code),
-                        "error_msg": error_msg,
-                    }
-                except Exception as err:
-                    log.error(f"{self.name}: failed to process line #{i}")
-                    log.error(f"{self.name}: line = {line}")
-                    log.exception(err)
-
-        return (
-            pd.DataFrame(process_stdout())
-            .set_index('datetime')
-        )
+        return pd.DataFrame(process_stdout())
 
 
