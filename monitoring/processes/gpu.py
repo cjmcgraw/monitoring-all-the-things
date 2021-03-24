@@ -37,26 +37,26 @@ class NvidiaSmiDmon(SimpleMonitoringProcess):
         )
 
     def load_dataframe(self) -> pd.DataFrame:
-        _, _, *stdout = list(iter(self))
+        *stdout = list(iter(self))
 
         def process_stdout():
             for line_number, row in enumerate(stdout):
-                try:
-                    date, time, *cols = row.split()
-                    record = [f"{date} {time}"] + cols
-                    yield {
-                        k: f(x) for (k, f), x
-                        in zip(dmon_columns_with_transformations, record)
-                    }
-                except Exception as err:
-                    log.error(get_message_error_reading_line(
-                        self.name,
-                        self.stdout_file,
-                        stdout,
-                        line_number,
-                        header_lines_consumed=2
-                    ))
-                    log.exception(err)
+                if not str(row).startswith("#"):
+                    try:
+                        date, time, *cols = row.split()
+                        record = [f"{date} {time}"] + cols
+                        yield {
+                            k: f(x) for (k, f), x
+                            in zip(dmon_columns_with_transformations, record)
+                        }
+                    except Exception as err:
+                        log.error(get_message_error_reading_line(
+                            self.name,
+                            self.stdout_file,
+                            stdout,
+                            line_number,
+                        ))
+                        log.exception(err)
 
         return pd.DataFrame(process_stdout())
 
@@ -98,26 +98,26 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
         )
 
     def load_dataframe(self) -> pd.DataFrame:
-        _, _, *stdout = list(iter(self))
+        stdout = list(iter(self))
 
         def process_stdout():
             for line_number, row in enumerate(stdout):
-                try:
-                    date, time, *cols = row.split()
-                    record = [f"{date} {time}"] + cols
-                    yield {
-                        k: f(x) for (k, f), x
-                        in zip(pmon_columns_with_transformations, record)
-                    }
-                except Exception as err:
-                    log.error(get_message_error_reading_line(
-                        self.name,
-                        self.stdout_file,
-                        stdout,
-                        line_number,
-                        header_lines_consumed=2
-                    ))
-                    log.exception(err)
+                if not str(row).startswith("#"):
+                    try:
+                        date, time, *cols = row.split()
+                        record = [f"{date} {time}"] + cols
+                        yield {
+                            k: f(x) for (k, f), x
+                            in zip(pmon_columns_with_transformations, record)
+                        }
+                    except Exception as err:
+                        log.error(get_message_error_reading_line(
+                            self.name,
+                            self.stdout_file,
+                            stdout,
+                            line_number,
+                        ))
+                        log.exception(err)
 
         return pd.DataFrame(process_stdout())
 
