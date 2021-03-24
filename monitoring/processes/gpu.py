@@ -31,7 +31,7 @@ class NvidiaSmiDmon(SimpleMonitoringProcess):
     def __init__(self):
         super().__init__(
             "nvidia-smi-dmon",
-            ["nvidia-smi", "dmon", "-d", "1", "-o" "DT", "-s", "pucvmet"]
+            ["nvidia-smi", "dmon", "-d", "1", "-o", "DT", "-s", "pucvmet"]
         )
 
     def load_dataframe(self) -> pd.DataFrame:
@@ -70,7 +70,7 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
     def __init__(self):
         super().__init__(
             "nvidia-smi-pmon",
-            ["nvidia-smi", "pmon", "-d", "1", "-o" "DT", "-s", "um"]
+            ["nvidia-smi", "pmon", "-d", "1", "-o", "DT", "-s", "um"]
         )
 
     def load_dataframe(self) -> pd.DataFrame:
