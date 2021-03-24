@@ -45,8 +45,11 @@ class MpStat(SimpleMonitoringProcess):
                 'Average' not in unparsed_row
             ])
             if valid_row:
-                time, am_or_pm, *data = unparsed_row.split()
-                row = [time + am_or_pm] + data
+                time, *data = unparsed_row.split()
+                if len(data) == 13:
+                    am_or_pm, *data = data
+                    time += am_or_pm
+                row = [time] + data
                 return [
                     f(x) for (_, f), x in zip(columns_with_transforms, row)
                 ]
