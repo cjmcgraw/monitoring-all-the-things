@@ -68,7 +68,7 @@ class Strace(MonitoringProcess):
                             "timing": float(timing.strip("<").strip(">")) if timing else None,
                             "fn": fn,
                             "args": args,
-                            "return_code": int(return_code) if return_code else None,
+                            "return_code": return_code,
                             "error_msg": error_msg,
                         }
                     except Exception as err:
@@ -77,7 +77,6 @@ class Strace(MonitoringProcess):
                             self._strace_output_file,
                             stdout,
                             line_number,
-                            header_lines_consumed=0
                         ))
                         log.exception(err)
 
