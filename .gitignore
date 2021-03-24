@@ -5,3 +5,6 @@
 
 *.eg-info/
 *.egg-info/
+2*/
+*.csv
+*.log
