@@ -99,7 +99,7 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
 
         def process_stdout():
             for i, row in enumerate(stdout, start=2):
-                try
+                try:
                     date, time, *cols = row.split()
                     record = [f"{date} {time}"] + cols
                     yield {
