@@ -163,7 +163,7 @@ class NvidiaSmi(SimpleMonitoringProcess):
             for line_number, row in enumerate(stdout):
                 try:
                     record = row.split(',')
-                    return {
+                    yield {
                         k: f(x)
                         for (k, f), x in zip(smi_query_columns_with_transformations, record)
                     }
