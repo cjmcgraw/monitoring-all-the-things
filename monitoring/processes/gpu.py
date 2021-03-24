@@ -92,39 +92,24 @@ class NvidiaSmiPmon(SimpleMonitoringProcess):
                 return None
 
 
-def parse_memory(m):
-    value, unit = m.strip().split()
-    return float(m)
-
-
-def parse_percentage(m):
-    value, _ = m.strip().split()
-    return float(m)
-
-
-def parse_frequency(m):
-    value, unit = m.strip().split()
-    return float(m)
-
-
 smi_query_columns_with_transformations = [
     ('datetime', pd.to_datetime),
     ('gpu', int),
     ("pstate", str),
     ("buffer_size", int),
-    ("total_memory", parse_memory),
-    ('free_memory', parse_memory),
-    ('used_memory', parse_memory),
+    ("total_memory", float),
+    ('free_memory', float),
+    ('used_memory', float),
     ('compute_mode', str),
-    ('gpu_utilization', parse_percentage),
-    ('memory_utilization', parse_percentage),
+    ('gpu_utilization', float),
+    ('memory_utilization', float),
     ('encoder_sessions', int),
     ('encoder_average_fps', int),
     ('encoder_average_latency', int),
-    ('graphic_clocks', parse_frequency),
-    ('sm_clocks', parse_frequency),
-    ('memory_clocks', parse_frequency),
-    ('video_clocks', parse_frequency)
+    ('graphic_clocks', float),
+    ('sm_clocks', float),
+    ('memory_clocks', float),
+    ('video_clocks', float)
 ]
 
 
@@ -136,7 +121,7 @@ class NvidiaSmi(SimpleMonitoringProcess):
             [
                 "nvidia-smi",
                 "--query-gpu=timestamp,index,pstate,accounting.buffer_size,memory.total,memory.free,memory.used,compute_mode,utilization.gpu,utilization.memory,encoder.stats.sessionCount,encoder.stats.averageFps,encoder.stats.averageLatency,clocks.gr,clocks.sm,clocks.mem,clocks.video",
-                "--format=csv,noheader",
+                "--format=csv,noheader,nounits",
                 "-l", "1"
             ]
         )
