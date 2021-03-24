@@ -1,6 +1,4 @@
 sudo apt install -y \
-    vmstat \
+    sysstat \
     moreutils \
-    iostat \
-    strace \
-    mpstat
+    strace
