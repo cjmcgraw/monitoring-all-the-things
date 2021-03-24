@@ -51,16 +51,30 @@ class NvidiaSmiDmon(SimpleMonitoringProcess):
         return pd.DataFrame(data).set_index('datetime')
 
 
+def process_int_or_empty(i):
+    try:
+        return int(i)
+    except:
+        return None
+
+
+def process_float_or_empty(f):
+    try:
+        return float(f)
+    except:
+        return None
+
+
 pmon_columns_with_transformations = [
     ("datetime", pd.to_datetime),
     ('gpu', int),
-    ('pid', int),
+    ('pid', process_int_or_empty),
     ('type', str),
-    ('shared_memory_cores_utilization', int),
-    ('memory_utilization', int),
-    ('encoder_utilization', int),
-    ('decoder_utilization', int),
-    ('FB_memory_usage', float),
+    ('shared_memory_cores_utilization', process_int_or_empty),
+    ('memory_utilization', process_int_or_empty),
+    ('encoder_utilization', process_int_or_empty),
+    ('decoder_utilization', process_int_or_empty),
+    ('FB_memory_usage', process_float_or_empty),
     ('command', str)
 ]
 
