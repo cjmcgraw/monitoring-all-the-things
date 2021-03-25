@@ -1,4 +1,5 @@
 from . import SimpleMonitoringProcess
+import logging as log
 import pandas as pd
 import json
 
@@ -18,17 +19,22 @@ class MpStat(SimpleMonitoringProcess):
         )
 
     def load_dataframe(self) -> pd.DataFrame:
-        with open(self.stdout_file) as f:
-            json_output = json.load(f)
-
-        stats = json_output['sysstat']['hosts'][0]['statistics']
         rows = []
-        for records in stats:
-            datetime = pd.to_datetime(records['timestamp'])
-            for record in records['cpu-load']:
-                rows.append({
-                    "datetime": datetime,
-                    **record
-                })
+        try:
+            with open(self.stdout_file) as f:
+                json_output = json.load(f)
+
+            stats = json_output['sysstat']['hosts'][0]['statistics']
+            for records in stats:
+                datetime = pd.to_datetime(records['timestamp'])
+                for record in records['cpu-load']:
+                    rows.append({
+                        "datetime": datetime,
+                        **record
+                    })
+        except Exception as err:
+            log.error(f"{self.name}: failed to parse json file at {self.stdout_file}")
+            log.exception(err)
+            log.error(f"{self.name} related file will be empty")
 
         return pd.DataFrame(rows)

@@ -1,5 +1,5 @@
 from . import SimpleMonitoringProcess
-import uuid
+import logging as log
 import pandas as pd
 import json
 
@@ -14,13 +14,18 @@ class IoStat(SimpleMonitoringProcess):
         )
 
     def load_dataframe(self) -> pd.DataFrame:
-        with open(self.stdout_file) as f:
-            data = json.load(f)
-
         records = []
-        for record in data['sysstat']['hosts'][0]['statistics']:
-            datetime = pd.to_datetime(record['timestamp'])
-            for value in record['disk']:
-                records.append(dict(**value, datetime=datetime))
+        try:
+            with open(self.stdout_file) as f:
+                data = json.load(f)
+
+            for record in data['sysstat']['hosts'][0]['statistics']:
+                datetime = pd.to_datetime(record['timestamp'])
+                for value in record['disk']:
+                    records.append(dict(**value, datetime=datetime))
+        except Exception as err:
+            log.error(f"{self.name}: failed to process json at {self.stdout_file}")
+            log.exception(err)
+            log.error(f"{self.name} associated files will most likely be empty")
 
         return pd.DataFrame(records)
